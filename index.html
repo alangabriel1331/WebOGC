@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sorteo de Cofres</title>
+    <style>
+        body {
+            text-align: center;
+            background-color: #222;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            justify-content: center;
+            max-width: 1200px;
+            margin: auto;
+            margin-top: 30px;
+            position: relative;
+        }
+        @keyframes vibrar {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-5px, -5px) rotate(-2deg); }
+            40% { transform: translate(5px, 5px) rotate(2deg); }
+            60% { transform: translate(-5px, 5px) rotate(-2deg); }
+            80% { transform: translate(5px, -5px) rotate(2deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        @keyframes brillo {
+            0% { text-shadow: 0 0 10px transparent; }
+            50% { text-shadow: 0 0 20px currentColor; }
+            100% { text-shadow: 0 0 10px transparent; }
+        }
+        @keyframes aparecerFinal {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .cofre {
+            width: 250px;
+            height: 250px;
+            background: url('https://i.imgur.com/7uAIuwa.png') no-repeat center;
+            background-size: contain;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: border-color 0.3s, opacity 0.5s ease-out, transform 0.3s ease;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+            font-size: 48px;
+            font-weight: bold;
+        }
+        .cofre:hover {
+            transform: scale(1.05) rotate(1deg);
+        }
+        .cofre-numero {
+            position: absolute;
+            top: 60%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 64px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 5px black;
+            pointer-events: none;
+        }
+        .seleccionado {
+            animation: vibrar 1s ease-in-out;
+        }
+        .abierto {
+            background: none !important;
+        }
+        .abierto .cofre-numero {
+            display: none;
+        }
+        .premio {
+            font-size: 50px;
+            font-weight: bold;
+            display: none;
+            animation: brillo 2s infinite;
+            z-index: 2;
+        }
+        .ganado {
+            color: gold;
+        }
+        .no-ganado {
+            color: white;
+        }
+        .final-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: aparecerFinal 1s ease;
+        }
+        .final-mensaje {
+            font-size: 60px;
+            color: gold;
+            animation: brillo 2s infinite;
+            margin-bottom: 30px;
+        }
+        .reiniciar-btn {
+            padding: 15px 30px;
+            font-size: 20px;
+            background-color: gold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: black;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .reiniciar-btn:hover {
+            background-color: #ffcf33;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="cofresContainer"></div>
+
+    <script>
+        function generarPremios(cantidad) {
+            const premios = [];
+            for (let i = 0; i < cantidad; i++) {
+                const premio = [2000, 5000, 10000, 15000][Math.floor(Math.random() * 4)];
+                premios.push(premio);
+            }
+            return premios.sort(() => Math.random() - 0.5);
+        }
+
+        function generarCofres() {
+            const cantidad = 9;
+            const container = document.getElementById("cofresContainer");
+            container.innerHTML = "";
+            const premios = generarPremios(cantidad);
+
+            for (let i = 0; i < cantidad; i++) {
+                const cofre = document.createElement("div");
+                cofre.classList.add("cofre");
+                cofre.dataset.index = i;
+                cofre.onclick = () => abrirCofre(i);
+
+                const numero = document.createElement("div");
+                numero.classList.add("cofre-numero");
+                numero.textContent = i + 1;
+                cofre.appendChild(numero);
+
+                const premioElemento = document.createElement("div");
+                premioElemento.classList.add("premio");
+                premioElemento.innerHTML = `${premios[i]} Oro`;
+                cofre.appendChild(premioElemento);
+
+                container.appendChild(cofre);
+            }
+        }
+
+        function abrirCofre(index) {
+            document.querySelectorAll(".cofre").forEach(cofre => {
+                cofre.onclick = null;
+            });
+
+            const cofreSeleccionado = document.querySelector(`.cofre[data-index='${index}']`);
+            const premioGanado = cofreSeleccionado.querySelector(".premio");
+
+            cofreSeleccionado.classList.add("seleccionado");
+
+            setTimeout(() => {
+                cofreSeleccionado.classList.add("abierto");
+                premioGanado.style.display = "block";
+                premioGanado.classList.add("ganado");
+            }, 1000);
+
+            setTimeout(() => {
+                document.querySelectorAll(".cofre").forEach((cofre, i) => {
+                    if (i !== index) {
+                        const premio = cofre.querySelector(".premio");
+                        cofre.classList.add("abierto");
+                        premio.style.display = "block";
+                        premio.classList.add("no-ganado");
+                    }
+                });
+            }, 5000);
+
+            setTimeout(() => mostrarFinal(), 7000);
+        }
+
+        function mostrarFinal() {
+            const overlay = document.createElement("div");
+            overlay.classList.add("final-overlay");
+
+            const mensaje = document.createElement("div");
+            mensaje.classList.add("final-mensaje");
+            mensaje.textContent = "¡Gracias por participar!";
+
+            const boton = document.createElement("button");
+            boton.classList.add("reiniciar-btn");
+            boton.textContent = "Reiniciar Sorteo";
+            boton.onclick = () => location.reload();
+
+            overlay.appendChild(mensaje);
+            overlay.appendChild(boton);
+            document.body.appendChild(overlay);
+        }
+
+        generarCofres();
+    </script>
+</body>
+</html>
